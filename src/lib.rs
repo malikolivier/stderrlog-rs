@@ -337,17 +337,22 @@ impl Log for StdErrLog {
             Timestamp::Off => {}
         }
         if self.show_level {
-            let _ = write!(writer, "{} - ", record.level());
+            let _ = write!(writer, "{:5} - ", record.level());
         }
         if self.show_filename {
-            if let Some(filename) = record.file() {
-                let _ = write!(writer, "{}", filename);
-                if self.show_lno {
-                    if let Some(line) = record.line() {
-                        let _ = write!(writer, ":{}", line);
-                    }
-                }
-                let _ = write!(writer, " - ");
+            match (record.file(), record.line()) {
+                (Some(file), Some(line)) => {
+                    let content = if self.show_lno {
+                        format!("{}:{}", file, line)
+                    } else {
+                        format!("{}", file)
+                    };
+                    let _ = write!(writer, "{:21}", content);
+                },
+                (Some(file), None) => {
+                    let _ = write!(writer, "{:21}", file);
+                },
+                _ => {},
             }
         }
         let _ = writeln!(writer, "{}", record.args());
