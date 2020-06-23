@@ -256,6 +256,8 @@ pub struct StdErrLog {
     verbosity: LevelFilter,
     quiet: bool,
     show_level: bool,
+    show_filename: bool,
+    show_lno: bool,
     timestamp: Timestamp,
     modules: Vec<String>,
     writer: CachedThreadLocal<RefCell<StandardStream>>,
@@ -337,6 +339,17 @@ impl Log for StdErrLog {
         if self.show_level {
             let _ = write!(writer, "{} - ", record.level());
         }
+        if self.show_filename {
+            if let Some(filename) = record.file() {
+                let _ = write!(writer, "{}", filename);
+                if self.show_lno {
+                    if let Some(line) = record.line() {
+                        let _ = write!(writer, ":{}", line);
+                    }
+                }
+                let _ = write!(writer, " - ");
+            }
+        }
         let _ = writeln!(writer, "{}", record.args());
         {
             writer.get_mut().reset().expect("failed to reset the color");
@@ -359,6 +372,8 @@ impl StdErrLog {
             verbosity: LevelFilter::Error,
             quiet: false,
             show_level: true,
+            show_filename: false,
+            show_lno: false,
             timestamp: Timestamp::Off,
             modules: Vec::new(),
             writer: CachedThreadLocal::new(),
@@ -389,6 +404,20 @@ impl StdErrLog {
     /// Enables or disables the use of levels in log messages (default is true)
     pub fn show_level(&mut self, levels: bool) -> &mut StdErrLog {
         self.show_level = levels;
+        self
+    }
+
+    /// Enables or disables the use of source filename in log messages (default is false)
+    pub fn show_filename(&mut self, show: bool) -> &mut StdErrLog {
+        self.show_filename = show;
+        self
+    }
+
+    /// Enables or disables the use of line numbers in log messages (default is false)
+    /// If enabled, filenames will be displayed as well.
+    pub fn show_lno(&mut self, show: bool) -> &mut StdErrLog {
+        self.show_lno = show;
+        self.show_filename = show;
         self
     }
 
